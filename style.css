@@ -19,7 +19,7 @@ header {
 }
 
 article {
-  background: #8187ff;
+  background: #26c6da;
   border: 3px solid #f4511e;
   width: 90%;
   margin: 20px auto;
@@ -27,8 +27,12 @@ article {
   padding: 10px;
 }
 
-hr, article .date {
-  color: white;
+.inc{
+    background: #76ff03;
+    color: black;
+}
+.dec{
+    background: #ff27c9;
 }
 
 a:link, a:visited {
