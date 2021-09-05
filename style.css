@@ -1,5 +1,9 @@
 @import url(https://fonts.googleapis.com/css?family=Ubuntu:400,400i,700);
 
+html {
+    scroll-behavior: smooth;
+}
+
 body {
   margin: 0;
   padding: 0;
@@ -27,12 +31,19 @@ article {
   padding: 10px;
 }
 
+.date {
+    font-style: italic;
+    font-weight: bold;
+    font-size: 0.8rem;
+}
+
 .inc{
     background: #76ff03;
     color: black;
 }
 .dec{
     background: #ff27c9;
+    border: 1px solid red;
 }
 
 a:link, a:visited {
@@ -49,6 +60,10 @@ a:hover, a:active {
   background-color: purple;
 }
 
+.trans-img {
+    display: inline-block;
+}
+
 .bignum {
     border-radius: 20px;
     font-size: 25px;
@@ -59,7 +74,6 @@ a:hover, a:active {
     font-size: 40px;
     border-radius: 40px;
 }
-
 
 footer {
     margin-left: 10px;
@@ -74,4 +88,20 @@ footer {
 @keyframes OtoR {
     from {background-color: orange;}
     to {background-color: red;}
+}
+
+@-webkit-keyframes yellowfade {
+    from { background: yellow; }
+    to { background: #0363ff; }
+}
+
+@-moz-keyframes yellowfade {
+    from { background: yellow; }
+    to { background: #0363ff; }
+}
+
+.yft {
+    -webkit-animation: yellowfade 1s;
+    -moz-animation: yellowfade 1s;
+    animation: yellowfade 1s;
 }

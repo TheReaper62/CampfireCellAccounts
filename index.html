@@ -11,29 +11,43 @@
         <h1>营火 Accounts</h1>
     </header>
     <main>
-        <article style="border-color:#d81b60;">
-            <h3>Cell Fund Balance:</h3><p class="bignum">$97.50<p>
-            <p class="date">Last updated: 24 July 2021</p>
+        <article style="border-color:#d81b60;" id="main-balance">
+            <h3>Cell Fund Balance:</h3><p class="bignum">$87.95<p>
+            <a href="#102" id="to_update">Last updated: </a><p class="date">05 September 2021</p>
         </article>
         <hr>
-        <article class="neu">
+        <article class="neu" id="100">
             <h3>Start of Accounts</h3>
-            <p class="content" id="100"></p>
+            <p class="content"></p>
             <p class="date">24 July 2021</p>
         </article>
-        <article class="inc">
+        <article class="inc" id="101">
             <h3>Account Topup</h3>
-            <p class="content" id="101"></p>
+            <p class="content"></p>
             <ul>
                 <li>$97.50 Added from Suna</li>
             </ul>
 
             <p class="date">24 July 2021</p>
         </article>
+        <article class="dec" id="102">
+            <h3>Birthday Claim</h3>
+            <p class="content"></p>
+            <ul>
+                <li>En Ting's Birthday</li>
+                <li>$9.55 Returned to Suna</li>
+            </ul>
 
+            <a class="trans-img" target="__blank__" href="images/Enting_bday_purchase_05092021.jpeg" download>See Purchase Transaction Image</a>
+            <a class="trans-img" target="__blank__" href="images/Enting_bday_transfer_05092021.PNG" download>See Money Transfer Transaction Image</a>
+            <p class="date">05 September 2021</p>
+        </article>
     </main>
     <footer>
         <p>Website Maintained by <a target="__blank__" href="https://github.com/TheReaper62">@Fishball_Noodles</a></p>
     </footer>
   </body>
+  <script type="text/javascript">
+      document.getElementById("to_update").onclick = function () {document.getElementById("102").classList.add("yft")};
+  </script>
 </html>
