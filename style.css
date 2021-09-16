@@ -91,13 +91,13 @@ footer {
 }
 
 @-webkit-keyframes yellowfade {
-    from { background: yellow; }
-    to { background: #0363ff; }
+    from { background: #0363ff; }
+    to { background: yellow; }
 }
 
 @-moz-keyframes yellowfade {
-    from { background: yellow; }
-    to { background: #0363ff; }
+    from { background: #0363ff; }
+    to { background: yellow; }
 }
 
 .yft {
