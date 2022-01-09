@@ -1,0 +1,2 @@
+git+https://github.com/TheReaper62/Subapy.git
+git+https://github.com/Pycord-Development/pycord.git
