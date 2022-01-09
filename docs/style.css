@@ -7,23 +7,19 @@ html {
 body {
   margin: 0;
   padding: 0;
-  background: #0031ca;
+  background-color: #fae5df;
   font-family: ubuntu;
 }
 
 header {
-  display: flex;
-  align-items: center;
-  background: #ff844c;
-  border-radius: 10px;
-  margin: 1rem;
-  padding-left: 10px;
-  border: solid #a00037 5px;
-  animation:  OtoR 4s infinite;
+  text-align: center;
+  font-size: 40px;
+  font-weight: bold;
+  animation:  OtoR 3s infinite;
 }
 
 article {
-  background: #26c6da;
+  background: #fa70b5;
   border: 3px solid #f4511e;
   width: 90%;
   margin: 20px auto;
@@ -38,16 +34,16 @@ article {
 }
 
 .inc{
-    background: #76ff03;
+    background: #f5cac2;
     color: black;
 }
 .dec{
-    background: #ff27c9;
+    background: #f39385;
     border: 1px solid red;
 }
 
 a:link, a:visited {
-  background-color: #7a7cff;
+  background-color: #a0004b;
   color: white;
   padding: 5px 7px;
   text-align: center;
@@ -57,7 +53,7 @@ a:link, a:visited {
 }
 
 a:hover, a:active {
-  background-color: purple;
+  background-color: rgb(74, 3, 102);
 }
 
 .trans-img {
@@ -65,20 +61,19 @@ a:hover, a:active {
 }
 
 .bignum {
-    border-radius: 20px;
     font-size: 25px;
     font-weight: bold;
-    transition:font-size 0.2s,border-radius 1s;
+    transition:font-size 0.4s;
 }
 .bignum:hover {
-    font-size: 40px;
-    border-radius: 40px;
+    font-size: 35px;
 }
 
 footer {
     margin-left: 10px;
     padding-left: 10px;
-    color: white;
+    color: black;
+    background-color: #f5cac2;
     text-decoration: none;
     border: solid black 2px;
     border-radius: 10px;
@@ -86,18 +81,18 @@ footer {
 }
 
 @keyframes OtoR {
-    from {background-color: orange;}
-    to {background-color: red;}
+    from {color: orange;}
+    to {color: red;}
 }
 
 @-webkit-keyframes yellowfade {
-    from { background: #0363ff; }
-    to { background: yellow; }
+    from { background-color: #1a6bec; }
+    to { background-color: yellow; }
 }
 
 @-moz-keyframes yellowfade {
-    from { background: #0363ff; }
-    to { background: yellow; }
+    from { background-color: #0363ff; }
+    to { background-color: yellow; }
 }
 
 .yft {
