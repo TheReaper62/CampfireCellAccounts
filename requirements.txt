@@ -1,2 +1,3 @@
 git+https://github.com/TheReaper62/Subapy.git
 git+https://github.com/Pycord-Development/pycord.git
+requests==2.26.0
