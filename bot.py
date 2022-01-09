@@ -48,7 +48,7 @@ async def post_task(*, title, created_at, url, author, cell_group, description, 
     response = requests.get(url)
     if response.status_code == 200:
         content = clean_text(response.text)
-        book_name = {v:k for k,v in book_name_mapping.items()}[url[33:36]]
+        book_name = {v:k for k,v in book_name_mapping.items()}[url.split("/")[3][14:]]
         passage_ref = f"{book_name.title()} {url[37:]}"
         if len(content) > 0:
             page = 1
