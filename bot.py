@@ -1,4 +1,4 @@
-from os import getenv
+import os
 import json
 from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
@@ -11,13 +11,17 @@ from discord.ext import tasks
 
 from misc import book_name_mapping
 
-# Load config
-# with open('config.json') as f:
-#     env(= getjson.loads().read())
-
 settings = json.loads(open('settings.json').read())
 
 regs_guilds = [927814722370301962]
+
+# Overwrite getenv
+def getenv(key: str) -> str:
+    debugging = False
+    if debugging == True:
+        return json.loads(open('config.json').read())[key]
+    else:
+        return os.getenv(key)
 
 # Load bot and DB
 client = discord.Bot(intents=discord.Intents.all())
@@ -38,7 +42,7 @@ clean_text = lambda raw_html: [i.strip().replace("\u3000","") for i in re.sub(re
 
 datetime_now = lambda: datetime.now(tz=ZoneInfo("Asia/Singapore"))
 
-async def post_task(*, title, created_at, url, author, cell_group, description, **kwargs):
+async def post_task(*, title, created_at, url, author, cell_group, description, prompt, **kwargs):
     title_embed = discord.Embed(
         title=title.title(),
         description=f"Created for: <t:{int(datetime.strptime(created_at,r'%Y-%m-%d').timestamp())}>\nAuthor: <@!{author}>",
@@ -70,7 +74,7 @@ async def post_task(*, title, created_at, url, author, cell_group, description, 
         # Post Content
         raw_channel = settings[cell_group]['reading_channel']
         channel = await client.fetch_channel(raw_channel)
-        message = await channel.send(embeds=embeds)
+        await channel.send(embeds=embeds)
         embed = discord.Embed(
             title="Mark as completed",
             description = f"React with ✅ to mark as completed here",
@@ -95,6 +99,19 @@ async def post_task(*, title, created_at, url, author, cell_group, description, 
             colour=discord.Colour.teal()
         )
         await content_msg.edit(embed=embed)
+
+        # Post to reflections channel
+        channel = await client.fetch_channel(int(settings[cell_group]['comments_channel']))
+        embed = discord.Embed(
+            title = f"<@!{author}> has just posted a new reading for {title.title()}",
+            description = f"[Read Here]({content_msg.jump_url})\n**Share your reflections below**",
+            colour = discord.Colour.green()
+        )
+        if prompt != "None":
+            embed.add_field(name="Prompting Question",value=prompt,inline=False)
+            
+        await channel.send(embed=embed)
+
         return annoucement_msg.id
         
 async def retrieve_tasks():
@@ -120,22 +137,28 @@ async def on_raw_reaction_add(payload):
     if emoji == "✅" and member!=client.user:
         DB.table = 'Tasks'
         task = await DB.read(subapy.Filter('post_details','eq',str(message_id)))
+        if len(task) == 0:
+            return
         task = task[0]
-        completed = {"users":task['completed']['users'] + [user_id]}    
-        await DB.update(task.update(completed), subapy.Filter('post_details', 'eq', str(message_id)))
+        completed = {"completed":{"users":task['completed']['users'] + [user_id]}} 
+        await DB.update(completed, subapy.Filter('post_details', 'eq', str(message_id)))
+        task = task|completed
 
         cur_channel = await client.fetch_channel(channel_id)
         annoucement_msg = await cur_channel.fetch_message(message_id)
+        reading_channel = await client.fetch_channel(settings[task['cell_group']]['reading_channel'])
+        msg_jump_ = await reading_channel.fetch_message(reading_channel.last_message_id)
+        msg_jump_url = msg_jump_.jump_url
+
         embed = discord.Embed(
             title="New Reading",
             description=f"Reading Title: {task['title'].title()}\nCreated for: <t:{int(datetime.strptime(task['created_at'],r'%Y-%m-%d').timestamp())}>\nAuthor: <@!{task['author']}>",
             colour=discord.Colour.green()
-        ).add_field(name="**Description**", value=task['description'], inline=False)
-        _completed = len([member for member in member.guild.members if member.id in completed['users']])
+        ).add_field(name="Description", value=task['description']+f"\n[Jump to passage]({msg_jump_url})", inline=False)
+        _completed = len([member for member in member.guild.members if member.id in completed['completed']['users']])
         _total_users = len([member for member in member.guild.members if member.bot == False])
         completion_percentage = f"{_completed}/{_total_users} `{round((_completed/_total_users)*100,2)}%`"
-        users_completion = [f"✅ {member}" if member.id in completed['users'] else f"❌ {member}" for member in member.guild.members]
-        users_completion.remove("❌ Embeded#2449")
+        users_completion = [f"✅ {member}" if member.id in completed['completed']['users'] else f"❌ {member}" for member in member.guild.members if not member.bot]
         users_completion = "\n".join(users_completion) if users_completion != [] else "No one has completed this task yet"
         embed.add_field(name=f'Completion Status: {completion_percentage}', value=users_completion, inline=False)
         await annoucement_msg.edit(embed=embed)
@@ -195,6 +218,7 @@ async def new_read_cmd(
     title: discord.commands.Option(str, 'Title of Reading', required=True),
     book: discord.commands.Option(str, 'Reference to the book name.',required=True, autocomplete=book_name_autocomplete),
     passage: discord.commands.Option(str, "In the format: aa:bb-cc:dd", required=True),
+    prompt: discord.commands.Option(str, 'Prompting Question', default="None", required=False),
     cell_group: discord.commands.Option(str,"Cell Group. Defaults to the one related to this server", choices=list(settings.keys()), default="Auto", required=False),
     description: discord.commands.Option(str, 'Description of the reading', default="No Description", required=False)
 ):  
@@ -235,6 +259,7 @@ async def new_read_cmd(
             "cell_group": cell_group,
             "description": description,
             "author" : str(ctx.author.id),
+            'prompt': prompt
         }
         await DB.insert(new_data, subapy.Filter('created_at', 'eq', date), upsert=True)
 
