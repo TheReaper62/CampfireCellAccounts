@@ -1,3 +1,4 @@
+# http://m.ibibles.net/quote03.htm
 book_name_mapping = {
     "Genesis" : "ge",
     "Exodus" : "exo",
