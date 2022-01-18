@@ -27,7 +27,7 @@ def getenv(key: str) -> str:
 client = discord.Bot(intents=discord.Intents.all())
 DB = subapy.AsyncClient(
     db_url=getenv('supabase_url'),
-    api_key=getenv('supapase_api_key')
+    api_key=getenv('supabase_api_key')
 )
 
 # Bot Events
