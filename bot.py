@@ -1,3 +1,5 @@
+from typing import Union
+
 import os
 import json
 from datetime import datetime, timedelta
@@ -25,7 +27,7 @@ def getenv(key: str) -> str:
 
 # Load bot and DB
 client = discord.Bot(intents=discord.Intents.all())
-DB = subapy.AsyncClient(
+DB = subapy.Client(
     db_url=getenv('supabase_url'),
     api_key=getenv('supabase_api_key')
 )
@@ -34,7 +36,7 @@ DB = subapy.AsyncClient(
 @client.event
 async def on_ready():
     DB.table = 'Tasks'
-    await DB.update({"posted":False},subapy.Filter('id','eq',4))
+    await DB.async_update({"posted":False},subapy.Filter('id','eq',4))
     print('Logged in')
             
 # Core Functions
@@ -42,87 +44,92 @@ clean_text = lambda raw_html: [i.strip().replace("\u3000","") for i in re.sub(re
 
 datetime_now = lambda: datetime.now(tz=ZoneInfo("Asia/Singapore"))
 
-async def post_task(*, title, created_at, url, author, cell_group, description, prompt, **kwargs):
+async def post_task(*, title, created_at, urls: Union[str,list[str]], author, cell_group, description, prompt, **kwargs):
     title_embed = discord.Embed(
         title=title.title(),
         description=f"Created for: <t:{int(datetime.strptime(created_at,r'%Y-%m-%d').timestamp())}>\nAuthor: <@!{author}>",
         colour = discord.Colour.green()
     )
     embeds = [title_embed]
-    response = requests.get(url)
-    if response.status_code == 200:
+    urls = urls[1:].split(',') if urls[0]=="~" else urls
+    responses = [requests.get(url) for url in urls]
+    page = 0
+    for response in responses:
         content = clean_text(response.text)
-        book_name = {v:k for k,v in book_name_mapping.items()}[url.split("/")[3][14:]]
-        passage_ref = f"{book_name.title()} {url[37:]}"
+        book_name = {v:k for k,v in book_name_mapping.items()}[response.url.split("/")[3][14:]]
+        passage_ref = f"{book_name.title()} {response.url[37:]}"
         if len(content) > 0:
-            page = 1
-            embed = discord.Embed(
-                title=f"{title.title()}\n*{passage_ref}*",
-                colour=discord.Colour.green()
-            ).set_footer(text=f"{title.title()} | Page {page}")
+            page += 1
+            text = ""
             for verse in content:
-                embed.add_field(name=re.findall(r"\d+:\d+",verse)[0], value=re.sub(re.compile(r"\d+:\d+"),"",verse), inline=False)
-                if len(embed) > 5000:
+                text += (re.sub(re.compile(r"\d+:\d+"), "", verse) + "\n")
+
+                if False:# len(embed) > 5000:
                     page += 1
                     embeds.append(embed)
                     embed = discord.Embed(
                         title=title.title(),
                         colour = discord.Colour.green()
                     ).set_footer(text=f"{passage_ref.title()} | Page {page}")
+            embed = discord.Embed(
+                title=f"{title.title()}\n*{passage_ref}*",
+                description=text,
+                colour=discord.Colour.green()
+            ).set_footer(text=f"{title.title()} | Page {page}")
             embeds.append(embed)
         
-        # Post Content
-        raw_channel = settings[cell_group]['reading_channel']
-        channel = await client.fetch_channel(raw_channel)
-        await channel.send(embeds=embeds)
-        embed = discord.Embed(
-            title="Mark as completed",
-            description = f"React with ✅ to mark as completed here",
-            colour = discord.Colour.teal()
-        )
-        content_msg = await channel.send(embed=embed)
+    # Post Content
+    raw_channel = settings[cell_group]['reading_channel']
+    channel = await client.fetch_channel(raw_channel)
+    await channel.send(embeds=embeds)
+    embed = discord.Embed(
+        title="Mark as completed",
+        description = f"React with ✅ to mark as completed here",
+        colour = discord.Colour.teal()
+    )
+    content_msg = await channel.send(embed=embed)
 
-        # Post Notification
-        channel = await client.fetch_channel(settings[cell_group]['announcement_channel'])
-        embed = discord.Embed(
-            title=f"New Reading",
-            description=f"Reading Title: {title.title()}\nCreated for: <t:{int(datetime.strptime(created_at,r'%Y-%m-%d').timestamp())}>\nAuthor: <@!{author}>\n",
-            colour = discord.Colour.green()
-        ).add_field(name="Description", value=description+f"\n[Jump to passage]({content_msg.jump_url})", inline=False)
-        annoucement_msg = await channel.send(embed=embed)
-        await annoucement_msg.add_reaction('✅')
+    # Post Notification
+    channel = await client.fetch_channel(settings[cell_group]['announcement_channel'])
+    embed = discord.Embed(
+        title=f"New Reading",
+        description=f"Reading Title: {title.title()}\nCreated for: <t:{int(datetime.strptime(created_at,r'%Y-%m-%d').timestamp())}>\nAuthor: <@!{author}>\n",
+        colour = discord.Colour.green()
+    ).add_field(name="Description", value=description+f"\n[Jump to passage]({content_msg.jump_url})", inline=False)
+    annoucement_msg = await channel.send(embed=embed)
+    await annoucement_msg.add_reaction('✅')
 
-        # Link Annoucement message
-        embed = discord.Embed(
-            title="Mark as completed",
-            description=f"React with ✅ to mark as completed [here]({annoucement_msg.jump_url})",
-            colour=discord.Colour.teal()
-        )
-        await content_msg.edit(embed=embed)
+    # Link Annoucement message
+    embed = discord.Embed(
+        title="Mark as completed",
+        description=f"React with ✅ to mark as completed [here]({annoucement_msg.jump_url})",
+        colour=discord.Colour.teal()
+    )
+    await content_msg.edit(embed=embed)
 
-        # Post to reflections channel
-        channel = await client.fetch_channel(int(settings[cell_group]['comments_channel']))
-        embed = discord.Embed(
-            title = f"<@!{author}> has just posted a new reading for {title.title()}",
-            description = f"[Read Here]({content_msg.jump_url})\n**Share your reflections below**",
-            colour = discord.Colour.green()
-        )
-        if prompt != "None":
-            embed.add_field(name="Prompting Question",value=prompt,inline=False)
-            
-        await channel.send(embed=embed)
+    # Post to reflections channel
+    channel = await client.fetch_channel(int(settings[cell_group]['comments_channel']))
+    embed = discord.Embed(
+        title = f"A new Reading has just been posted - {title.title()}",
+        description = f"[Read Here]({content_msg.jump_url})\n**Share your reflections below**",
+        colour = discord.Colour.green()
+    )
+    if prompt != "None":
+        embed.add_field(name="Prompting Question",value=prompt,inline=False)
+        
+    await channel.send(embed=embed)
 
-        return annoucement_msg.id
+    return annoucement_msg.id
         
 async def retrieve_tasks():
     now = datetime_now()
     DB.table = 'Tasks'
-    tasks = await DB.read("*")
+    tasks = await DB.async_read("*")
     for i in tasks:
         if i['created_at'] == now.strftime(r"%Y-%m-%d") and i['posted'] != True:
             print(f"Posting - {i['title']}")
             message_ref = await post_task(**i)
-            await DB.update(i | {'posted': True, "post_details": str(message_ref)}, subapy.Filter('id', 'eq', i['id']))
+            await DB.async_update(i | {'posted': True, "post_details": str(message_ref)}, subapy.Filter('id', 'eq', i['id']))
     else:
         print("No tasks")
 
@@ -136,12 +143,12 @@ async def on_raw_reaction_add(payload):
 
     if emoji == "✅" and member!=client.user:
         DB.table = 'Tasks'
-        task = await DB.read(subapy.Filter('post_details','eq',str(message_id)))
+        task = await DB.async_read(subapy.Filter('post_details','eq',str(message_id)))
         if len(task) == 0:
             return
         task = task[0]
         completed = {"completed":{"users":task['completed']['users'] + [user_id]}} 
-        await DB.update(completed, subapy.Filter('post_details', 'eq', str(message_id)))
+        await DB.async_update(completed, subapy.Filter('post_details', 'eq', str(message_id)))
         task = task|completed
 
         cur_channel = await client.fetch_channel(channel_id)
@@ -261,7 +268,7 @@ async def new_read_cmd(
             "author" : str(ctx.author.id),
             'prompt': prompt
         }
-        await DB.insert(new_data, subapy.Filter('created_at', 'eq', date), upsert=True)
+        await DB.async_insert(new_data, subapy.Filter('created_at', 'eq', date), upsert=True)
 
         date = datetime.strptime(date, r'%Y/%m/%d')
         embed = discord.Embed(
