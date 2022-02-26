@@ -257,7 +257,7 @@ async def new_read_cmd(
 
     async with ctx.typing():
         book_code = book_name_mapping[book]
-        processed_passage = f"http://ibibles.net/quote.php?cus-{book_code}/{passage}"
+        processed_passage = f"http://ibibles.net/quote.php?niv-{book_code}/{passage}"
         cell_group = [i for i in settings if settings[i]['id'] == int(ctx.guild.id)][0] if cell_group == "Auto" else cell_group
         new_data = {
             "created_at": date,
