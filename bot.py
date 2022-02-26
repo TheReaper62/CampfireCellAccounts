@@ -170,6 +170,14 @@ async def on_raw_reaction_add(payload):
         embed.add_field(name=f'Completion Status: {completion_percentage}', value=users_completion, inline=False)
         await annoucement_msg.edit(embed=embed)
 
+        # Send DM
+        embed = discord.Embed(
+            title=f"Thanks For Reading",
+            description=f"Don't forget to share your reflections in the reflection channel",
+            colour = discord.Colour.green()
+        ).set_footer(text=datetime_now().strftime("Completed Reading | %A, %d %B %Y"))
+        await member.send(embed=embed)
+
 # Commands
 # Book Name Autocomplete
 async def book_name_autocomplete(ctx: discord.AutocompleteContext) -> list[str]:
