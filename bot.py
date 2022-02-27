@@ -75,9 +75,8 @@ async def post_task(*, title, created_at, urls: Union[str,list[str]], author, ce
                 colour=discord.Colour.green()
             ).set_footer(text=f"{title.title()} | Page {page}")
             
-            v_no = 0
+            v_no = int(passage_ref.split(":")[-1].split("-")[0])
             for verse in content:
-                v_no += 1
                 text += (f"*{v_no}*  " + re.sub(re.compile(r"\d+:\d+"), "", verse) + "\n")
                 cur_embed = edit_embed(cur_embed, text, page)
                 if len(cur_embed) > 3500:
@@ -88,6 +87,8 @@ async def post_task(*, title, created_at, urls: Union[str,list[str]], author, ce
                         description="",
                         colour=discord.Colour.green()
                     ).set_footer(text=f"{title.title()} | Page {page}")
+                    text = ""
+                v_no += 1
             embeds.append(cur_embed)
         
     # Post Content
