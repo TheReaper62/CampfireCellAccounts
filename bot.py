@@ -78,9 +78,9 @@ async def post_task(*, title, created_at, urls: Union[str,list[str]], author, ce
             v_no = 0
             for verse in content:
                 v_no += 1
-                text += (f"*{v_no}*   " + re.sub(re.compile(r"\d+:\d+"), "", verse) + "\n")
+                text += (f"*{v_no}*  " + re.sub(re.compile(r"\d+:\d+"), "", verse) + "\n")
                 cur_embed = edit_embed(cur_embed, text, page)
-                if len(cur_embed) > 5000:
+                if len(cur_embed) > 4500:
                     embeds.append(cur_embed)
                     page += 1
                     cur_embed = discord.Embed(
