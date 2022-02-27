@@ -5,5 +5,11 @@
             "announcement_channel" : 927815512099000360,
             "reading_channel" : 927815595515334666,
             "comments_channel" : 927815663974756362
-        }
+        },
+    "Arise": {
+        "id": 947477016389746703,
+        "announcement_channel": 947477591894392853,
+        "reading_channel": 947477621283901521,
+        "comments_channel": 947477680415199272
+    }
 }
