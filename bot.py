@@ -74,9 +74,11 @@ async def post_task(*, title, created_at, urls: Union[str,list[str]], author, ce
                 description="",
                 colour=discord.Colour.green()
             ).set_footer(text=f"{title.title()} | Page {page}")
-
+            
+            v_no = 0
             for verse in content:
-                text += (re.sub(re.compile(r"\d+:\d+"), "", verse) + "\n")
+                v_no += 1
+                text += (f"*{v_no}*" + re.sub(re.compile(r"\d+:\d+"), "", verse) + "\n")
                 cur_embed = edit_embed(cur_embed, text, page)
                 if len(cur_embed) > 5000:
                     embeds.append(cur_embed)
@@ -322,7 +324,7 @@ async def _force_retrieve_cmd(ctx: discord.ApplicationContext):
 async def check_newday():
     await client.wait_until_ready()
     now=datetime_now()
-    if now.hour == 0 and now.minute == 0:
+    if now.hour == 6 and now.minute == 30:
         await retrieve_tasks()
 
 # Start background tasks
