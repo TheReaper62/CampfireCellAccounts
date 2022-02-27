@@ -16,7 +16,7 @@ from misc import book_name_mapping
 
 settings = json.loads(open('settings.json').read())
 
-regs_guilds = [927814722370301962]
+regs_guilds = [927814722370301962, 947477016389746703]
 
 # Overwrite getenv
 def getenv(key: str) -> str:
