@@ -1,6 +1,7 @@
 from typing import Union
 
 import os
+import asyncio
 import json
 from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
@@ -61,27 +62,38 @@ async def post_task(*, title, created_at, urls: Union[str,list[str]], author, ce
         if len(content) > 0:
             page += 1
             text = ""
-            for verse in content:
-                text += (re.sub(re.compile(r"\d+:\d+"), "", verse) + "\n")
 
-                if False:# len(embed) > 5000:
-                    page += 1
-                    embeds.append(embed)
-                    embed = discord.Embed(
-                        title=title.title(),
-                        colour = discord.Colour.green()
-                    ).set_footer(text=f"{passage_ref.title()} | Page {page}")
-            embed = discord.Embed(
+            def edit_embed(_embed, _text, _page):
+                place = _embed
+                place.description = _text
+                place.set_footer(text=f"{title.title()} | Page {_page}")
+                return place
+
+            cur_embed = discord.Embed(
                 title=f"{title.title()}\n*{passage_ref}*",
-                description=text,
+                description="",
                 colour=discord.Colour.green()
             ).set_footer(text=f"{title.title()} | Page {page}")
-            embeds.append(embed)
+
+            for verse in content:
+                text += (re.sub(re.compile(r"\d+:\d+"), "", verse) + "\n")
+                cur_embed = edit_embed(cur_embed, text, page)
+                if len(cur_embed) > 5000:
+                    embeds.append(cur_embed)
+                    page += 1
+                    cur_embed = discord.Embed(
+                        title=f"{title.title()}\n*{passage_ref}*",
+                        description="",
+                        colour=discord.Colour.green()
+                    ).set_footer(text=f"{title.title()} | Page {page}")
+            embeds.append(cur_embed)
         
     # Post Content
     raw_channel = settings[cell_group]['reading_channel']
     channel = await client.fetch_channel(raw_channel)
-    await channel.send(embeds=embeds)
+    for embed in embeds:
+        await channel.send(embed=embed)
+        await asyncio.sleep(0.5)
     embed = discord.Embed(
         title="Mark as completed",
         description = f"React with ✅ to mark as completed here",
