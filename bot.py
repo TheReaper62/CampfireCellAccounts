@@ -180,7 +180,7 @@ async def on_raw_reaction_add(payload):
         _completed = len([member for member in member.guild.members if member.id in completed['completed']['users']])
         _total_users = len([member for member in member.guild.members if member.bot == False])
         completion_percentage = f"{_completed}/{_total_users} `{round((_completed/_total_users)*100,2)}%`"
-        users_completion = [f"✅ {member}" if member.id in completed['completed']['users'] else f"❌ {member}" for member in member.guild.members if not member.bot]
+        users_completion = [f"✅ {member.nick}" if member.id in completed['completed']['users'] else f"❌ {member.nick}" for member in member.guild.members if not member.bot]
         users_completion = "\n".join(users_completion) if users_completion != [] else "No one has completed this task yet"
         embed.add_field(name=f'Completion Status: {completion_percentage}', value=users_completion, inline=False)
         await annoucement_msg.edit(embed=embed)
