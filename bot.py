@@ -42,6 +42,7 @@ async def on_ready():
             
 # Core Functions
 clean_text = lambda raw_html: [i.strip().replace("\u3000","") for i in re.sub(re.compile('<.*?>'), '', raw_html).split("\n") if i not in ["","Bible Quote"]]
+urlify = lambda text: text.strip().lower().replace(' ', '%20').replace(',', '%2C').replace(":","%3A")
 
 datetime_now = lambda: datetime.now(tz=ZoneInfo("Asia/Singapore"))
 
@@ -51,58 +52,61 @@ async def post_task(*, title, created_at, urls: Union[str,list[str]], author, ce
         description=f"Created for: <t:{int(datetime.strptime(created_at,r'%Y-%m-%d').timestamp())}>\nAuthor: <@!{author}>",
         colour = discord.Colour.green()
     )
-    embeds = [title_embed]
-    urls = urls[1:].split(',') if urls[0]=="~" else urls
-    responses = [requests.get(url) for url in urls]
-    page = 0
-    for response in responses:
-        content = clean_text(response.text)
-        book_name = {v:k for k,v in book_name_mapping.items()}[response.url.split("/")[3][14:]]
-        passage_ref = f"{book_name.title()} {response.url[37:]}"
-        if len(content) > 0:
-            page += 1
-            text = ""
 
-            def edit_embed(_embed, _text, _page):
-                place = _embed
-                place.description = _text
-                place.set_footer(text=f"{title.title()} | Page {_page}")
-                return place
+    # Deprecated
+    if False:
+        embeds = [title_embed]
+        urls = urls[1:].split(',') if urls[0]=="~" else urls
+        responses = [requests.get(url) for url in urls]
+        page = 0
+        for response in responses:
+            content = clean_text(response.text)
+            book_name = {v:k for k,v in book_name_mapping.items()}[response.url.split("/")[3][14:]]
+            passage_ref = f"{book_name.title()} {response.url[37:]}"
+            if len(content) > 0:
+                page += 1
+                text = ""
 
-            cur_embed = discord.Embed(
-                title=f"{title.title()}\n*{passage_ref}*",
-                description="",
-                colour=discord.Colour.green()
-            ).set_footer(text=f"{title.title()} | Page {page}")
-            
-            v_no = int(passage_ref.split(":")[-1].split("-")[0])
-            for verse in content:
-                text += (f"*{v_no}*  " + re.sub(re.compile(r"\d+:\d+"), "", verse) + "\n")
-                cur_embed = edit_embed(cur_embed, text, page)
-                if len(cur_embed) > 3500:
-                    embeds.append(cur_embed)
-                    page += 1
-                    cur_embed = discord.Embed(
-                        title=f"{title.title()}\n*{passage_ref}*",
-                        description="",
-                        colour=discord.Colour.green()
-                    ).set_footer(text=f"{title.title()} | Page {page}")
-                    text = ""
-                v_no += 1
-            embeds.append(cur_embed)
+                def edit_embed(_embed, _text, _page):
+                    place = _embed
+                    place.description = _text
+                    place.set_footer(text=f"{title.title()} | Page {_page}")
+                    return place
+
+                cur_embed = discord.Embed(
+                    title=f"{title.title()}\n*{passage_ref}*",
+                    description="",
+                    colour=discord.Colour.green()
+                ).set_footer(text=f"{title.title()} | Page {page}")
+                
+                v_no = int(passage_ref.split(":")[-1].split("-")[0])
+                for verse in content:
+                    text += (f"*{v_no}*  " + re.sub(re.compile(r"\d+:\d+"), "", verse) + "\n")
+                    cur_embed = edit_embed(cur_embed, text, page)
+                    if len(cur_embed) > 3500:
+                        embeds.append(cur_embed)
+                        page += 1
+                        cur_embed = discord.Embed(
+                            title=f"{title.title()}\n*{passage_ref}*",
+                            description="",
+                            colour=discord.Colour.green()
+                        ).set_footer(text=f"{title.title()} | Page {page}")
+                        text = ""
+                    v_no += 1
+                embeds.append(cur_embed)
         
-    # Post Content
-    raw_channel = settings[cell_group]['reading_channel']
-    channel = await client.fetch_channel(raw_channel)
-    for embed in embeds:
-        await channel.send(embed=embed)
-        await asyncio.sleep(0.5)
-    embed = discord.Embed(
-        title="Mark as completed",
-        description = f"React with ✅ to mark as completed here",
-        colour = discord.Colour.teal()
-    )
-    content_msg = await channel.send(embed=embed)
+        # Post Content
+        raw_channel = settings[cell_group]['reading_channel']
+        channel = await client.fetch_channel(raw_channel)
+        for embed in embeds:
+            await channel.send(embed=embed)
+            await asyncio.sleep(0.5)
+        embed = discord.Embed(
+            title="Mark as completed",
+            description = f"React with ✅ to mark as completed here",
+            colour = discord.Colour.teal()
+        )
+        content_msg = await channel.send(embed=embed)
 
     # Post Notification
     channel = await client.fetch_channel(settings[cell_group]['announcement_channel'])
@@ -110,23 +114,23 @@ async def post_task(*, title, created_at, urls: Union[str,list[str]], author, ce
         title=f"New Reading",
         description=f"Reading Title: {title.title()}\nCreated for: <t:{int(datetime.strptime(created_at,r'%Y-%m-%d').timestamp())}>\nAuthor: <@!{author}>\n",
         colour = discord.Colour.green()
-    ).add_field(name="Description", value=description+f"\n[Jump to passage]({content_msg.jump_url})", inline=False)
+    ).add_field(name="Description", value=description+f"\n[Read Now!!!]({urls})", inline=False)
     annoucement_msg = await channel.send(embed=embed)
     await annoucement_msg.add_reaction('✅')
 
-    # Link Annoucement message
-    embed = discord.Embed(
-        title="Mark as completed",
-        description=f"React with ✅ to mark as completed [here]({annoucement_msg.jump_url})",
-        colour=discord.Colour.teal()
-    )
-    await content_msg.edit(embed=embed)
+    # Link Annoucement message (Deprecated)
+    # embed = discord.Embed(
+    #     title="Mark as completed",
+    #     description=f"React with ✅ to mark as completed [here]({annoucement_msg.jump_url})",
+    #     colour=discord.Colour.teal()
+    # )
+    # await content_msg.edit(embed=embed)
 
     # Post to reflections channel
     channel = await client.fetch_channel(int(settings[cell_group]['comments_channel']))
     embed = discord.Embed(
         title = f"A new Reading has just been posted - {title.title()}",
-        description = f"[Read Here]({content_msg.jump_url})\n**Share your reflections below**",
+        description = f"[Read Here]({annoucement_msg.jump_url})\n**Share your reflections below**",
         colour = discord.Colour.green()
     )
     if prompt != "None":
@@ -239,10 +243,52 @@ async def help(ctx,command: discord.commands.Option(str,"Specific Command Name",
     guild_ids=regs_guilds,
     name='setreading',
     description='Set a reading for a future date',
-    choices=['setreading <date> <url> <title> <description>'],
     permissions=[discord.commands.CommandPermission(id=929168912837410826, type=1, permission=True)]
 )
 async def new_read_cmd(
+    ctx: discord.ApplicationContext,
+    date: discord.commands.Option(str, 'Reading Date (Posts at Midnight), "tdy" "tmr". Format: [YY]/MM/DD (Year is Optional)', required=True),
+    title: discord.commands.Option(str, 'Title of Reading', required=True),
+    passage: discord.commands.Option(str, "Passage: ", required=True),
+    prompt: discord.commands.Option(str, 'Prompting Question', default="None", required=False),
+    cell_group: discord.commands.Option(str, "Cell Group. Defaults to the one related to this server", choices=list(settings.keys()), default="Auto", required=False),
+    description: discord.commands.Option(str, 'Description of the reading', default="No Description", required=False)
+):
+    embed = None
+    if date == "tmr":
+        date = (datetime_now()+timedelta(hours=24)).strftime(r"%Y/%m/%d")
+    elif date == 'tdy':
+        date = datetime_now().strftime(r"%Y/%m/%d")
+    else:
+        if re.search(r"\d{2}/\d{2}/\d{2}|\d{2}/\d{2}/\d{2}", date) == None:
+            if re.search(r"\d{2}/\d{2}", date) == None:
+                embed = discord.Embed(
+                    title="Error",
+                    description="Date format is invalid. Please use the format: [YY]/MM/DD (Year Defaults to this year)",
+                    colour=discord.Colour.red()
+                )
+            else:
+                date = f"{datetime_now().year}/{date}"
+    if embed != None:
+        await ctx.respond(embed=embed)
+        return
+
+    processed_passage = f"https://www.biblegateway.com/passage/?search={urlify(passage)}&version=NLT"
+    cell_group = [i for i in settings if settings[i]['id'] == int(ctx.guild.id)][0] if cell_group == "Auto" else cell_group
+    new_data = {
+        "created_at": date,
+        "title": title.title(),
+        "urls": processed_passage,
+        "cell_group": cell_group,
+        "description": description,
+        "author": str(ctx.author.id),
+        'prompt': prompt
+    }
+    await DB.async_insert(new_data, subapy.Filter('created_at', 'eq', date), upsert=True)
+    await retrieve_tasks()
+
+# Deprecated
+async def depre_new_read_cmd(
     ctx: discord.ApplicationContext,
     date: discord.commands.Option(str, 'Reading Date (Posts at Midnight), "tdy" "tmr". Format: [YY]/MM/DD (Year is Optional)', required=True),
     title: discord.commands.Option(str, 'Title of Reading', required=True),
