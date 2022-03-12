@@ -172,15 +172,16 @@ async def on_raw_reaction_add(payload):
 
         cur_channel = await client.fetch_channel(channel_id)
         annoucement_msg = await cur_channel.fetch_message(message_id)
-        reading_channel = await client.fetch_channel(settings[task['cell_group']]['reading_channel'])
-        msg_jump_ = await reading_channel.fetch_message(reading_channel.last_message_id)
-        msg_jump_url = msg_jump_.jump_url
+        # reading_channel = await client.fetch_channel(settings[task['cell_group']]['reading_channel'])
+        # msg_jump_ = await reading_channel.fetch_message(reading_channel.last_message_id)
+        # msg_jump_url = msg_jump_.jump_url
 
         embed = discord.Embed(
             title="New Reading",
             description=f"Reading Title: {task['title'].title()}\nCreated for: <t:{int(datetime.strptime(task['created_at'],r'%Y-%m-%d').timestamp())}>\nAuthor: <@!{task['author']}>",
             colour=discord.Colour.green()
-        ).add_field(name="Description", value=task['description']+f"\n[Jump to passage]({msg_jump_url})", inline=False)
+        ).add_field(name="Description", value=task['description']+f"\n[Read Now!!!]({task['urls']})", inline=False)
+        # ).add_field(name="Description", value=task['description']+f"\n[Jump to passage]({msg_jump_url})", inline=False)
         _completed = len([member for member in member.guild.members if member.id in completed['completed']['users']])
         _total_users = len([member for member in member.guild.members if member.bot == False])
         completion_percentage = f"{_completed}/{_total_users} `{round((_completed/_total_users)*100,2)}%`"
