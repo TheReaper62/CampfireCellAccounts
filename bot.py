@@ -408,7 +408,7 @@ async def check_newday():
     if now.hour == 6 and now.minute == 30:
         result = await retrieve_tasks()
         if result == 0:
-            await create_todays_task()
+            await get_todays_task()
 
 # Start background tasks
 check_newday.start()
