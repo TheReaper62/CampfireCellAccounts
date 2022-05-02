@@ -8,6 +8,7 @@ from zoneinfo import ZoneInfo
 import requests
 import re
 
+from bs4 import BeautifulSoup as bs
 import subapy
 import discord
 from discord.ext import tasks
@@ -151,6 +152,37 @@ async def retrieve_tasks():
             await DB.async_update(i | {'posted': True, "post_details": str(message_ref)}, subapy.Filter('id', 'eq', i['id']))
     else:
         print("No tasks")
+    return len(tasks)
+
+async def get_todays_tasks():
+    actual_day = datetime.now().timetuple().tm_yday
+    difference = 17
+    reading_day = actual_day - difference
+    show_diff = 59
+    show_day = actual_day - show_diff
+    if reading_day < 1:
+        reading_day += 365
+
+    with open('reads.html') as f:
+        soup = bs(f.read(),'html.parser')
+    sauce = soup.find_all({"tr":{"class":"not-active"}})
+    tar = sauce[reading_day-1].text
+    passage = ",".join(re.split(r", |\n",tar)[2:-1])
+    processed_passage = f"https://www.biblegateway.com/passage/?search={urlify(passage)}&version=NLT"
+    cgs = ["Campfire","Arise"]
+    date = datetime.strftime(datetime.now(),r"%Y-%m-%d")
+    for cg in cgs:
+        details = {
+            "created_at" : date,
+            "title": f"Day {show_day}",
+            "urls": processed_passage,
+            "cell_group": cg,
+            "author": 591107669180284928,
+            "description" : "No Description. Happy Reading",
+            'prompt': 'No Questions Set',
+        }
+        await DB.async_insert(details, subapy.Filter('created_at', 'eq', date), upsert=True)
+    await retrieve_tasks()
 
 @client.event
 async def on_raw_reaction_add(payload):
@@ -366,6 +398,7 @@ async def _force_retrieve_cmd(ctx: discord.ApplicationContext):
         await retrieve_tasks()
     await ctx.respond("Tasks Retrieved")
 
+
 # Background tasks
 # New Day Checker
 @tasks.loop(seconds=5)
@@ -373,7 +406,9 @@ async def check_newday():
     await client.wait_until_ready()
     now=datetime_now()
     if now.hour == 6 and now.minute == 30:
-        await retrieve_tasks()
+        result = await retrieve_tasks()
+        if result == 0:
+            await create_todays_task()
 
 # Start background tasks
 check_newday.start()
