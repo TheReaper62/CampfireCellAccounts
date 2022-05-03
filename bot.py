@@ -21,11 +21,7 @@ regs_guilds = [927814722370301962, 947477016389746703]
 
 # Overwrite getenv
 def getenv(key: str) -> str:
-    debugging = False
-    if debugging == True:
-        return json.loads(open('config.json').read())[key]
-    else:
-        return os.getenv(key)
+    return os.getenv(key) if os.getenv(key) != None else json.loads(open('config.json').read())[key]
 
 # Load bot and DB
 client = discord.Bot(intents=discord.Intents.all())
@@ -152,9 +148,11 @@ async def retrieve_tasks():
             await DB.async_update(i | {'posted': True, "post_details": str(message_ref)}, subapy.Filter('id', 'eq', i['id']))
     else:
         print("No tasks")
+        return 0
     return len(tasks)
 
-async def get_todays_tasks():
+async def get_todays_task():
+    print('Auto Retrieve Task')
     actual_day = datetime.now().timetuple().tm_yday
     difference = 17
     reading_day = actual_day - difference
@@ -170,7 +168,7 @@ async def get_todays_tasks():
     passage = ",".join(re.split(r", |\n",tar)[2:-1])
     processed_passage = f"https://www.biblegateway.com/passage/?search={urlify(passage)}&version=NLT"
     cgs = ["Campfire","Arise"]
-    date = datetime.strftime(datetime.now(),r"%Y-%m-%d")
+    date = datetime.strftime(datetime_now(),r"%Y-%m-%d")
     for cg in cgs:
         details = {
             "created_at" : date,
@@ -398,17 +396,40 @@ async def _force_retrieve_cmd(ctx: discord.ApplicationContext):
         await retrieve_tasks()
     await ctx.respond("Tasks Retrieved")
 
-
 # Background tasks
+
+# Update Auto Day
+async def get_posted_tdy():
+    DB.table = 'History'
+    result = await DB.async_read('*')
+    DB.table = "Tasks"
+    for i in result:
+        # Example Date: 2022-05-03T01:11:38+00:00
+        date = datetime.strptime(i['posted_at'],'%Y-%m-%dT%H:%M:%S+00:00') + timedelta(hours=8)
+        if (date.timetuple().tm_yday, date.timetuple().tm_year) == (datetime_now().timetuple().tm_yday,datetime_now().timetuple().tm_year) and i['posted']:
+            return True
+    return False
+
 # New Day Checker
 @tasks.loop(seconds=5)
 async def check_newday():
+    posted_tdy = await get_posted_tdy()
+    print('Posted today: ', posted_tdy)
+
     await client.wait_until_ready()
     now=datetime_now()
-    if now.hour == 6 and now.minute == 30:
+    if now.hour == 0 and now.minute == 0:
+        posted_tdy = False
+    elif now.hour == 10 and now.minute == 0:
         result = await retrieve_tasks()
-        if result == 0:
+        if result == 0 and not posted_tdy:
             await get_todays_task()
+            posted_tdy = True
+            DB.table ='History'
+            pri_key = int(datetime_now().strftime(r'%Y%j'))
+            await DB.async_insert({'id':pri_key,'posted': True}, subapy.Filter('id', 'eq', pri_key),upsert=True)
+            DB.table ='Tasks'
+            print('Posted today(Updated)')
 
 # Start background tasks
 check_newday.start()
