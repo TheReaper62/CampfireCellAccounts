@@ -404,9 +404,9 @@ async def get_posted_tdy():
     result = await DB.async_read('*')
     DB.table = "Tasks"
     for i in result:
-        # Example Date: 2022-05-03T01:11:38+00:00
-        date = datetime.strptime(i['posted_at'],'%Y-%m-%dT%H:%M:%S+00:00') + timedelta(hours=8)
-        if (date.timetuple().tm_yday, date.timetuple().tm_year) == (datetime_now().timetuple().tm_yday,datetime_now().timetuple().tm_year) and i['posted']:
+        # Example Date: 2022123 [YYYY(DOY)]
+        tdy_formatted = datetime_now().strftime(r"%Y%j")
+        if i['id'] == tdy_formatted and i['posted']:
             return True
     return False
 
@@ -420,7 +420,7 @@ async def check_newday():
     now=datetime_now()
     if now.hour == 0 and now.minute == 0:
         posted_tdy = False
-    elif now.hour == 10 and now.minute == 0:
+    elif now.hour == 6 and now.minute == 30:
         result = await retrieve_tasks()
         if result == 0 and not posted_tdy:
             await get_todays_task()
