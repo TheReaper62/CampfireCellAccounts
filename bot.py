@@ -405,7 +405,7 @@ async def get_posted_tdy():
     DB.table = "Tasks"
     for i in result:
         # Example Date: 2022123 [YYYY(DOY)]
-        tdy_formatted = datetime_now().strftime(r"%Y%j")
+        tdy_formatted = int(datetime_now().strftime(r"%Y%j"))
         if i['id'] == tdy_formatted and i['posted']:
             return True
     return False
