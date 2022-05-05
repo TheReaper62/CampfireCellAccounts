@@ -1,32 +1,42 @@
+import os, json
+import subapy
 from datetime import datetime
-from bs4 import BeautifulSoup as bs
-import re
+from zoneinfo import ZoneInfo
 
-urlify = lambda text: text.strip().lower().replace(' ', '%20').replace(',', '%2C').replace(":","%3A")
+def getenv(key: str) -> str:
+    return os.getenv(key) if os.getenv(key) != None else json.loads(open('config.json').read())[key]
 
-actual_day = datetime.now().timetuple().tm_yday
-difference = 17
-reading_day = actual_day - difference
-show_diff = 59
-show_day = actual_day - show_diff
-if reading_day < 1:
-    reading_day += 365
+def datetime_now(): return datetime.now(tz=ZoneInfo("Asia/Singapore"))
 
-with open('reads.html') as f:
-    soup = bs(f.read(),'html.parser')
-sauce = soup.find_all({"tr":{"class":"not-active"}})
-tar = sauce[reading_day-1].text
-passage = ",".join(re.split(r", |\n",tar)[2:-1])
-processed_passage = f"https://www.biblegateway.com/passage/?search={urlify(passage)}&version=NLT"
-cgs = ["Campfire","Arise"]
-date = datetime.strftime(datetime.now(),r"%Y-%m-%d")
-for cg in cgs:
-    details = {
-        "created_at" : date,
-        "title": f"Day {show_day}",
-        "urls": processed_passage,
-        "cell_group": cg,
-        "author": 591107669180284928,
-        'prompt': 'No Questions Set'
-    }
-    print(details)
+DB = subapy.Client(
+    db_url=getenv('supabase_url'),
+    api_key=getenv('supabase_api_key')
+)
+
+def get_posted_tdy():
+    DB.table = 'History'
+    result = DB.read('*')
+    DB.table = "Tasks"
+    for i in result:
+        # Example Date: 2022123 [YYYY(DOY)]
+        tdy_formatted = int(datetime_now().strftime(r"%Y%j"))
+        if i['id'] == tdy_formatted and i['posted']:
+            return True
+    return False
+
+def check_newday():
+    posted_tdy = get_posted_tdy()
+    print('Posted today: ', posted_tdy)
+
+    if not posted_tdy:
+        now = datetime_now()
+        posted_tdy = True
+        DB.table = 'History'
+        pri_key = int(datetime_now().strftime(r'%Y%j'))
+        DB.insert({'id': pri_key, 'posted': True}, subapy.Filter('id', 'eq', pri_key), upsert=True)
+        DB.table = 'Tasks'
+        print('Posted today(Updated)')
+
+get_posted_tdy()
+check_newday()
+get_posted_tdy()
