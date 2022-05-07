@@ -153,7 +153,7 @@ async def retrieve_tasks():
 
 async def get_todays_task():
     print('Auto Retrieve Task')
-    actual_day = datetime.now().timetuple().tm_yday
+    actual_day = datetime_now().timetuple().tm_yday
     difference = 17
     reading_day = actual_day - difference
     show_diff = 59
