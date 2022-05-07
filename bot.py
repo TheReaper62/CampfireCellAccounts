@@ -149,7 +149,6 @@ async def retrieve_tasks():
     else:
         print("No tasks")
         return 0
-    return len(tasks)
 
 async def get_todays_task():
     print('Auto Retrieve Task')
@@ -418,9 +417,10 @@ async def check_newday():
 
     await client.wait_until_ready()
     now=datetime_now()
+    today630am = now.replace(hour=6, minute=30, second=0)
     if now.hour == 0 and now.minute == 0:
         posted_tdy = False
-    elif now.hour == 6 and now.minute == 30:
+    elif now>=today630am:
         result = await retrieve_tasks()
         if result == 0 and not posted_tdy:
             await get_todays_task()
